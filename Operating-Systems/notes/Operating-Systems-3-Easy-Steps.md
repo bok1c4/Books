@@ -126,3 +126,12 @@ Each running program has its own **private virtual address space (address space)
 **Exactly how all of this is accomplished is also the subject of the first part of this book, on the topic of virtualization.**
 
 ### Concurrency
+
+When building an operating system the key concepts that needs to be covered in developing are:
+
+1. **Abstraction**
+2. **Performance (Minimize the overheads)**
+3. **Protection and Security**
+4. **Reliability**
+5. Energy-Efficiency
+6. Mobility
