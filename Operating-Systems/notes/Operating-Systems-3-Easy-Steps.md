@@ -6,7 +6,15 @@
   - [High level what happens to the code and hardware when the program is executed](#high-level-what-happens-to-the-code-and-hardware-when-the-program-is-executed)
 - [The CRUX OF THE PROBLEM: How to virtualize resources?](#the-crux-of-the-problem-how-to-virtualize-resources)
 - [Topics](#topics)
-  - [Introduction to Operating Systems](#introduction-to-operating-systems) - [Clix: How to virtualize Resources](#clix-how-to-virtualize-resources) - [Vritualizaing the CPU](#vritualizaing-the-cpu) - [Questions about Virtualizing the CPU](#questions-about-virtualizing-the-cpu) - [Vritualizaing the Memory](#vritualizaing-the-memory) - [Virtual Address Space](#virtual-address-space) - [Concurrency](#concurrency)
+  - [Introduction to Operating Systems](#introduction-to-operating-systems)
+    - [Clix: How to virtualize Resources](#clix-how-to-virtualize-resources)
+    - [Vritualizaing the CPU](#vritualizaing-the-cpu)
+      - [Questions about Virtualizing the CPU](#questions-about-virtualizing-the-cpu)
+    - [Vritualizaing the Memory](#vritualizaing-the-memory)
+      - [Virtual Address Space](#virtual-address-space)
+    - [Concurrency](#concurrency)
+    - [Presistence](#presistence)
+  - [Virtualization](#virtualization)
   <!--toc:end-->
 
 # Concepts
@@ -127,6 +135,94 @@ Each running program has its own **private virtual address space (address space)
 
 ### Concurrency
 
+**Thread** is a function running withing the same memory space as other functions with more then one active at the time.
+
+```c
+1 #include <stdio.h>
+2 #include <stdlib.h>
+3 #include "common.h"
+4
+5 volatile int counter = 0;
+6 int loops;
+7
+8 void *worker(void *arg) {
+9 int i;
+10 for (i = 0; i < loops; i++) {
+11 counter++;
+12 }
+13 return NULL;
+14 }
+15
+16 int
+17 main(int argc, char *argv[])
+18 {
+19 if (argc != 2) {
+20 fprintf(stderr, "usage: threads <value>\n");
+21 exit(1);
+22 }
+23 loops = atoi(argv[1]);
+24 pthread_t p1, p2;
+25 printf("Initial value : %d\n", counter);
+26
+27 Pthread_create(&p1, NULL, worker, NULL);
+28 Pthread_create(&p2, NULL, worker, NULL);
+29 Pthread_join(p1, NULL);
+30 Pthread_join(p2, NULL);
+31 printf("Final value : %d\n", counter);
+32 return 0;
+33 }
+```
+
+```bash
+prompt> gcc -o thread thread.c -Wall -pthread
+prompt> ./thread 1000
+Initial value : 0
+Final value : 2000
+```
+
+```bash
+prompt> ./thread 100000
+Initial value : 0
+Final value : 143012 // huh??
+prompt> ./thread 100000
+Initial value : 0
+Final value : 137298 // what the??
+```
+
+The reason why we are not getting 2x the initial value for the bigger values is because there is the problem with the order of the code execution. (Order execution).
+
+Where the shared counter is incremented, it takes three instructions:
+
+1. One to load the value from memory into a register
+2. One to increment it
+3. One to store it back into memory
+
+Because these three instructions does not execute in the same times, strange things can happen. But later we will cover why and how to address this.
+
+---
+
+### Presistence
+
+The software in the operating system that manages the disk is called **file system**.
+There are three calls that program should make to operating system and those are: **open(), write(), close()**.
+
+These system calls are routed to the part of the operating system that is called the file system.
+
+File system has to do a bit of work and that is:
+
+1. Figuring out where on the disk the new data will live.
+2. Then keeping the track of it in various structures the file system maintains.
+3. Doing so requires issuing I/O request to the underlying storage device, to either read existing structures or update (write) them.
+
+Getting a I/O device to do something for the developer is not very easy, try writing device driver.
+
+The OS provides standard simple library for all of these calls and that is why it is called **standard library**.
+
+To handle crashes and errors when writing to the disk (in the middle of the process) the file system needs to keep track of what is happening.
+
+1. **Journaling**
+2. **Copy-On-Write**
+
 When building an operating system the key concepts that needs to be covered in developing are:
 
 1. **Abstraction**
@@ -135,3 +231,39 @@ When building an operating system the key concepts that needs to be covered in d
 4. **Reliability**
 5. Energy-Efficiency
 6. Mobility
+
+## Virtualization
+
+### The Abstraction: The Process
+
+In this Topic we are Covering what is the **Process**.
+
+The definition of the process is informally is quite simple: it is a **running program**.
+
+The program itself is a lifeless thing it just sits there on the disk, a bunch of instructions and some static data.
+It is the operating system that makes that code full of instructions and data useful.
+
+#### The Crux of the Problem: How to Provide The Illusion of Many CPUs?
+
+Well the Operating System uses something called **Virtualizing the CPU**.
+By running one process, then stopping it and running another and so forth.
+
+This basic technique, known as **time sharing** of the CPU allows users to run as many concurrent processes as they would like. The potential cost is the performance, as each will run more slowly if the CPU(s) must be shared.
+
+To implement the virtualization of the CPU and to implement it well, the OS will need both some low-level machinery as well as some high level intelligence.
+**We call the Low-Level machinery mechanism**. Those are low-level methods or protocols that implement the needed pieces of functionality.
+
+#### Time Sharing and Space Sharing
+
+> [!NOTE] > **Use Time-Sharing and Space-Sharing**
+
+> **Time sharing** is one of the most basic techniques used by an OS to share a resource.
+> By allowing the resource to be used for a little while by one entity and then a little while by another, and so forth.
+> The CPU or a network link can be shared by many.
+
+> **Space Sharing** is the natural counter part of the Time Sharing where a resource is divided (in space) among those who wish to use it. For example the disk is the natural **space-shared** resource. As once a block is once assigned to a file.
+> It is not likely to be assigned to another file until its actually deleted.
+
+#### Context Switch
+
+**Context Switch** gives the OS ability to stop running one program and start running another on a given CPU; this time sharing mechanism is employed by all modern OSes.
