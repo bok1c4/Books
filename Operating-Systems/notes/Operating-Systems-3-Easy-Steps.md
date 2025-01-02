@@ -267,3 +267,15 @@ To implement the virtualization of the CPU and to implement it well, the OS will
 #### Context Switch
 
 **Context Switch** gives the OS ability to stop running one program and start running another on a given CPU; this time sharing mechanism is employed by all modern OSes.
+
+On top of the **Context Switch** we have something called **Policies**.
+**Policies** are algorithms for making some kind of decision withing the OS.
+
+For example:
+
+> [!NOTE]
+> Question:
+> Given the number of possible programs to run on a CPU, which program should OS run?
+> Answer:
+> **Scheduling policy** in the OS will make that decision.
+> It works likely using the historical information (e.g what types of programs are run, performance metrics, is the system optimizing for interactive performance).
