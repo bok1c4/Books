@@ -279,3 +279,8 @@ For example:
 > Answer:
 > **Scheduling policy** in the OS will make that decision.
 > It works likely using the historical information (e.g what types of programs are run, performance metrics, is the system optimizing for interactive performance).
+
+#### A Process
+
+Instructions lie's in memory, as well as the data that the running program reads and writes sits in memory as well.
+**Thus the memory that a process can address** (called its **address space**) is part of the process.
