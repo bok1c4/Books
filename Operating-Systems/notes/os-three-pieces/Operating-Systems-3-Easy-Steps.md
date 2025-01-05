@@ -29,8 +29,32 @@
     - [Key System Calls](#key-system-calls)
       - [Fault Tolerance Techniques](#fault-tolerance-techniques)
     - [Essential OS Design Principles](#essential-os-design-principles)
-  - [Virtualization: The Process](#virtualization-the-process) - [CPU Virtualization](#cpu-virtualization) - [Time Sharing vs. Space Sharing](#time-sharing-vs-space-sharing) - [Context Switching](#context-switching) - [A Process](#a-process) - [Process API](#process-api) - [Create](#create) - [Destroy](#destroy) - [Wait](#wait) - [Miscellaneous Control](#miscellaneous-control) - [Status](#status) - [Process Creation: A little more detail](#process-creation-a-little-more-detail)
-  <!--toc:end-->
+  - [Virtualization: The Process](#virtualization-the-process)
+    - [CPU Virtualization](#cpu-virtualization)
+    - [Time Sharing vs. Space Sharing](#time-sharing-vs-space-sharing)
+    - [Context Switching](#context-switching)
+      - [A Process](#a-process)
+      - [Process API](#process-api)
+        - [Create](#create)
+        - [Destroy](#destroy)
+        - [Wait](#wait)
+        - [Miscellaneous Control](#miscellaneous-control)
+        - [Status](#status)
+      - [Process Creation: A little more detail](#process-creation-a-little-more-detail)
+        - [Loaded into the memory, What now?](#loaded-into-the-memory-what-now)
+      - [Process States](#process-states)
+        - [Running](#running)
+        - [Ready](#ready)
+        - [Blocked](#blocked)
+      - [Data structures](#data-structures)
+      - [Summary](#summary)
+      - [Interlude: Process API](#interlude-process-api)
+        - [fork()](#fork)
+        - [wait()](#wait)
+        - [exec()](#exec)
+        - [fork() and exec()](#fork-and-exec)
+- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file)
+<!--toc:end-->
 
 # Concepts
 
@@ -409,3 +433,51 @@ mechanisms needed to implement processes, and the higher-level poli-
 cies required to schedule them in an intelligent way. By combining mech-
 anisms and policies, we will build up our understanding of how an oper-
 ating system virtualizes the CPU.
+
+#### Interlude: Process API
+
+Programming with Process API
+
+- _fork()_
+- _wait()_
+- _exec()_
+
+##### fork()
+
+The _fork_ system call is used to _create a new process_, however it is the strangest routine you will ever call.
+
+The process that is created its _almost exact copy of the calling process_. To the OS that looks like there are two copies of the program running, and both are about to _return from the fork() system call_.
+
+The new process called _child_ in contrast to the creating _parent_ _does not start running at main()_.
+_The child is not the exact copy, because it has its own address space, its own memory, its own registers and so forth._
+The value it returns to the caller of fork() is different.
+
+##### wait()
+
+The _wait_ system call when called the parent no metter what waits for the child to complete its execution and just then it proceeds with its execution.
+That's why we have output I am child /Projects/Examples/parent-child, because the parent waits for the child which returns just 0.
+
+> [!NOTE]
+> But there are few cases where **wait()** returns BEFORE the child exits. Read the man page for more info.
+
+##### exec()
+
+The _exec_ system call is useful when you want to run a program that is different from the calling program.
+However often you want to run a different program, _exec()_ does just that.
+
+The _exec_ system call, loads the code and the static data of another program, and overwrites the its current code segment (and current static data).
+The heap and stack and other parts of the memory space of the program are re-initialized. And then the OS just simply runs the program with specified arguments.
+
+##### fork() and exec()
+
+The fork() and exec() calls are very powerful way for creating multi processed program. And I should make something fun of that.
+
+# Stevens and Rago chapters: Process Control, Process Relationships and Signals
+
+#### Shells (Scripting)
+
+Go to the man pages of bash and learn some more about it.
+
+#### Redirecting and writing to a file
+
+Unix systems start looking for free file descriptors at zero. STDOUT*FILENO will be the first available one and thus get assigned when \_open()* is called.

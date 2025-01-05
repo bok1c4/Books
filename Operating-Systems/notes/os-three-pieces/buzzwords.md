@@ -23,3 +23,4 @@ For Lazily executing the code we need to understand these two:
 
 Scheduled process
 De-Scheduled process
+CPU Scheduler
