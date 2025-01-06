@@ -24,3 +24,7 @@ For Lazily executing the code we need to understand these two:
 Scheduled process
 De-Scheduled process
 CPU Scheduler
+
+Process API
+System Calls
+There are cases where wait() returns before the child exits.
