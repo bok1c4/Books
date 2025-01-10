@@ -480,4 +480,18 @@ Go to the man pages of bash and learn some more about it.
 
 #### Redirecting and writing to a file
 
-Unix systems start looking for free file descriptors at zero. STDOUT*FILENO will be the first available one and thus get assigned when \_open()* is called.
+Unix systems start looking for free file descriptors at zero. **STDOUTFILENO** will be the first available one and thus get assigned when open() is called.
+
+#### Mechanism: Limited Direct Execution
+
+As we know with the **time sharing** approach the CPU virtualization is achieved.
+
+##### Challenges when building the virtualization machinery
+
+###### Performance
+
+How can we implement virtualization without adding excessive overhead to the system?
+
+###### Control
+
+How can we run processes efficiently while retaining control over the CPU?
