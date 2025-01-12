@@ -53,7 +53,7 @@
         - [wait()](#wait)
         - [exec()](#exec)
         - [fork() and exec()](#fork-and-exec)
-- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file)
+- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file) - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution) - [Challenges when building the virtualization machinery](#challenges-when-building-the-virtualization-machinery) - [Performance](#performance) - [Control](#control) - [Crux: How to efficiently virtualize the CPU with Control?](#crux-how-to-efficiently-virtualize-the-cpu-with-control) - [Basic Technique: Limited Direct Execution](#basic-technique-limited-direct-execution)
 <!--toc:end-->
 
 # Concepts
@@ -495,3 +495,39 @@ How can we implement virtualization without adding excessive overhead to the sys
 ###### Control
 
 How can we run processes efficiently while retaining control over the CPU?
+By control it means that the process is not using the whole CPU.
+
+### Crux: How to efficiently virtualize the CPU with Control?
+
+So the OS must virtualize the CPU in an efficient manner, but while retaining control over the system.
+For that both hardware and the software (operating system) will be required.
+
+#### Basic Technique: Limited Direct Execution
+
+**So this means just running the program directly on the CPU.**
+
+This is how it is done;
+
+When the OS wishes to start a program running:
+
+**OS:**
+
+1. **Creates a process entry for it in a process list.**
+2. **Allocates memory pages for it.**
+3. **Loads the program into memory**
+4. **Set up stack with argc and argv**
+5. **Clear registers**
+6. **Executes call main()**
+
+7. Free memory of process - after program execution
+8. Remove from process list - after program execution
+
+**Executed Program:**
+
+1. runs main()
+2. executes return from main
+
+##### Cons of Limited Direct Execution
+
+1. **If we just run a program, how can the OS make sure that the program doesn't do anything that we don't want it to do?**
+2. **When a process is running, how OS stops it from running and switch to another process (time sharing)?**
