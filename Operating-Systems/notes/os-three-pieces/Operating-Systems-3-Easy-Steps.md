@@ -53,7 +53,7 @@
         - [wait()](#wait)
         - [exec()](#exec)
         - [fork() and exec()](#fork-and-exec)
-- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file) - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution) - [Challenges when building the virtualization machinery](#challenges-when-building-the-virtualization-machinery) - [Performance](#performance) - [Control](#control) - [Crux: How to efficiently virtualize the CPU with Control?](#crux-how-to-efficiently-virtualize-the-cpu-with-control) - [Basic Technique: Limited Direct Execution](#basic-technique-limited-direct-execution) - [Cons of Limited Direct Execution](#cons-of-limited-direct-execution) - [Problem 1: Restricted Operations](#problem-1-restricted-operations) - [Problem 2: Switching between Processes (context-switching)](#problem-2-switching-between-processes-context-switching)
+- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file) - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution) - [Challenges when building the virtualization machinery](#challenges-when-building-the-virtualization-machinery) - [Performance](#performance) - [Control](#control) - [Crux: How to efficiently virtualize the CPU with Control?](#crux-how-to-efficiently-virtualize-the-cpu-with-control) - [Basic Technique: Limited Direct Execution](#basic-technique-limited-direct-execution) - [How the program is executed on low level](#how-the-program-is-executed-on-low-level) - [Cons of Limited Direct Execution](#cons-of-limited-direct-execution) - [Problem 1: Restricted Operations](#problem-1-restricted-operations) - [Problem 2: Switching between Processes (context-switching)](#problem-2-switching-between-processes-context-switching)
 <!--toc:end-->
 
 # Concepts
@@ -512,6 +512,8 @@ When the OS wishes to start a program running:
 
 **OS:**
 
+##### How the program is executed on low level
+
 1. **Creates a process entry for it in a process list.**
 2. **Allocates memory pages for it.**
 3. **Loads the program into memory**
@@ -564,8 +566,53 @@ And this is how trap and trap table comes into play:
 2. **Trap instruction is triggered:**
    system call to a trap: **0x80 (in x86) or svc (in ARM)**
    this trap instruction causes the hardware to:
+
    - **Save the current state of the user program (program counter, registers)**
    - Switch the CPU to **kernel mode** granting the OS full control of the system.
    - Use the **trap number** provided by the instruction to look up the corresponding handler in trap table.
 
+Initializing trap and trap tables:
+
+1. Machine boots
+2. OS (boot - kernel mode) initializes trap table
+   2-1. Hardware - remembers addresses of system caller
+3. [Executing programs](#how-the-program-is-executed-on-low-level)
+
 ###### Problem 2: Switching between Processes (context-switching)
+
+**Crux: How to regain control of the CPU**
+
+How can the operating system **regain control** of the CPU so that it can switch between processes?
+
+**First approach: Cooperative Approach - Wait for System Calls**
+
+So the running process needs to be cooperative, that means that it **implements yielding, that is the system call that lets the Operating System take back the control of the CPU.**
+
+This was older approach used by Macintosh and Xbox consoles.
+
+Yielding basic system call that voluntarily transfers the control of the CPU to OS.
+
+**Crux: with this approach there can be infinitive loop with no hope of breaking from it.**
+
+**Second Approach: Non-Cooperative - The OS forcefully takes control of the CPU**
+
+With this we are fixing the crux;
+
+**How can the regain the control without relaying on the process?**
+
+> [!NOTE] > SOLUTION: TIME INTERRUPT
+
+When the **timer interrupt** is raised the currently running process is halted, and a pre-configured **interrupt handler** in the OS runs.
+
+1. stop the current running process
+2. start a different one
+
+OS must **inform the hardware which code to run when the timer interrupt occurs;**
+thus at boot time the OS do just that.
+
+During the boot sequence the OS must **start the timer.** - privileged operation
+The timer can also be turned off - privileged operation
+
+> [!NOTE] Hardware also have responsibility when the interruption occurs
+> and that is: save necessary state.
+> so that it could be restored from
