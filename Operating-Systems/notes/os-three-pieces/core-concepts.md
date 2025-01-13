@@ -10,6 +10,8 @@
 - [Registers](#registers)
   - [What are CPU registers?](#what-are-cpu-registers)
   - [Types of Registers](#types-of-registers)
+- [Program Execution](#program-execution)
+  - [System call (user-mode, kernel-mode)](#system-call-user-mode-kernel-mode)
   <!--toc:end-->
 
 ## Some necessary concepts that needs to be covered
@@ -103,3 +105,57 @@ We should think of them as of CPU's 'scratchpad' for performing calculations and
 - Instruction Pointer (IP) / Program Counter (PC): Holds the memory of the next instruction to execute.
 - Stack Pointer (SP): Points to the top of the stack, used for function calls and local variables change.
 - Base Pointer (BP):
+
+## Program Execution
+
+**Process** is just a running program.
+
+This is how OS runs the program.
+
+1. OS makes the entry on process list.
+2. Allocates memory for the process on the memory page.
+3. Creates the stack for process with argv and argc
+4. Loads the programs code into RAM.
+5. Clears registers()
+6. Runs main()
+
+Program: runs main, and returns
+
+7. Frees memory of the process
+8. Removes it from process list.
+
+### System call (user-mode, kernel-mode)
+
+To execute the system call, a program must execute a special **trap** instruction.
+This instruction simultaneously jumps into the kernel mode and raises the privilege level to kernel mode; once in the kernel, the system can now perform whatever privileged operations are needed (if allowed).
+When finished, the OS calls a **special return from trap** instruction which as you might expect returns into the calling **user-mode** while simultaneously reducing the privileged level back to user mode.
+
+**System call is just an procedure call.**
+
+#### How is system call executed (Procedure call)
+
+It is a procedure call but hidden inside that procedure call is the famous trap instruction.
+Example procedure call for open():
+
+1. You are executing the procedure call into the C library.
+2. There for system call (open()) the library uses **agreed-upon** calling convention.
+3. **kernel puts the arguments on the well-known locations (stack or registers)**
+4. **kernel puts the system call number on the stack or register**
+5. **executes the trap instruction**.
+6. The code in the library after the trap **unpacks return values and returns control to the program that issued that system call.**
+
+**Every system call has its own number for the trap (step 4.)**
+open() - system call to a trap: **0x80 (in x86) or svc (in ARM)**
+
+All that code is hard-coded and written in assembly, so we don't need to write assembly for it.
+
+**When the system call is running the processor will push the needed registers, counters, flags and few other registers onto the per-process kernel-stack;** after it finished it will pop them and return to the user-mode execution.
+
+#### How does trap know which code to run inside the OS?
+
+1. The kernel setups the **trap table** at boot time.
+   When the machine boots up, it does so in privileged (kernel-mode), and thus is free to configure machine hardware as need be.
+   OS thus does is to tell the hardware what code to run when certain even occurs.
+   When the keyboard button is pressed, when disk is asked to read and etc...
+2. The OS informs the hardware of **the locations of these trap handlers**
+3. Once the hardware is informed it remembers until the machine is rebooted. And that's how the hardware knows what to do.

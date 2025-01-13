@@ -53,7 +53,7 @@
         - [wait()](#wait)
         - [exec()](#exec)
         - [fork() and exec()](#fork-and-exec)
-- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file) - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution) - [Challenges when building the virtualization machinery](#challenges-when-building-the-virtualization-machinery) - [Performance](#performance) - [Control](#control) - [Crux: How to efficiently virtualize the CPU with Control?](#crux-how-to-efficiently-virtualize-the-cpu-with-control) - [Basic Technique: Limited Direct Execution](#basic-technique-limited-direct-execution)
+- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file) - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution) - [Challenges when building the virtualization machinery](#challenges-when-building-the-virtualization-machinery) - [Performance](#performance) - [Control](#control) - [Crux: How to efficiently virtualize the CPU with Control?](#crux-how-to-efficiently-virtualize-the-cpu-with-control) - [Basic Technique: Limited Direct Execution](#basic-technique-limited-direct-execution) - [Cons of Limited Direct Execution](#cons-of-limited-direct-execution) - [Problem 1: Restricted Operations](#problem-1-restricted-operations) - [Problem 2: Switching between Processes (context-switching)](#problem-2-switching-between-processes-context-switching)
 <!--toc:end-->
 
 # Concepts
@@ -531,3 +531,41 @@ When the OS wishes to start a program running:
 
 1. **If we just run a program, how can the OS make sure that the program doesn't do anything that we don't want it to do?**
 2. **When a process is running, how OS stops it from running and switch to another process (time sharing)?**
+
+###### Problem 1: Restricted Operations
+
+Running directly on the CPU is very fast, but very risky. What if
+the process wishes to perform some kind of restricted operation, such
+as issuing an I/O request to a disk, or gaining access to more system
+resources such as CPU or memory?
+
+**Crux: A process must be able to perform I/O and some other restricted operations,
+but without giving the process complete control over the system.
+How can the OS and hardware work together to do so?**
+
+> [!NOTE] > Protected Control Transfer
+
+Hardware assists the OS by providing different modes of execution.
+
+In **user mode**, Applications does not have full access to hardware resources.
+In **kernel mode**, the OS has access to the full resources of the machine.
+
+**Special instructions** to **trap** into the kernel and **return-from-trap**
+back to **user mode** programs are also provided, as well as instructions
+that allows the OS to tell the hardware where the **trap table** resides in memory.
+
+**Special instructions and user mode explained by example:**
+Example Scenario: User program is running on our computer that wants to write data to a file.
+**The application itself cannot directly access the disk(a hardware resource)** because it is running in a user-mode which has restricted privileges.
+
+And this is how trap and trap table comes into play:
+
+1. **User program request a services to write to a disk (calls system function (system call)).**
+2. **Trap instruction is triggered:**
+   system call to a trap: **0x80 (in x86) or svc (in ARM)**
+   this trap instruction causes the hardware to:
+   - **Save the current state of the user program (program counter, registers)**
+   - Switch the CPU to **kernel mode** granting the OS full control of the system.
+   - Use the **trap number** provided by the instruction to look up the corresponding handler in trap table.
+
+###### Problem 2: Switching between Processes (context-switching)
