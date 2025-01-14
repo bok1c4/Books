@@ -29,32 +29,8 @@
     - [Key System Calls](#key-system-calls)
       - [Fault Tolerance Techniques](#fault-tolerance-techniques)
     - [Essential OS Design Principles](#essential-os-design-principles)
-  - [Virtualization: The Process](#virtualization-the-process)
-    - [CPU Virtualization](#cpu-virtualization)
-    - [Time Sharing vs. Space Sharing](#time-sharing-vs-space-sharing)
-    - [Context Switching](#context-switching)
-      - [A Process](#a-process)
-      - [Process API](#process-api)
-        - [Create](#create)
-        - [Destroy](#destroy)
-        - [Wait](#wait)
-        - [Miscellaneous Control](#miscellaneous-control)
-        - [Status](#status)
-      - [Process Creation: A little more detail](#process-creation-a-little-more-detail)
-        - [Loaded into the memory, What now?](#loaded-into-the-memory-what-now)
-      - [Process States](#process-states)
-        - [Running](#running)
-        - [Ready](#ready)
-        - [Blocked](#blocked)
-      - [Data structures](#data-structures)
-      - [Summary](#summary)
-      - [Interlude: Process API](#interlude-process-api)
-        - [fork()](#fork)
-        - [wait()](#wait)
-        - [exec()](#exec)
-        - [fork() and exec()](#fork-and-exec)
-- [Stevens and Rago chapters: Process Control, Process Relationships and Signals](#stevens-and-rago-chapters-process-control-process-relationships-and-signals) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file) - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution) - [Challenges when building the virtualization machinery](#challenges-when-building-the-virtualization-machinery) - [Performance](#performance) - [Control](#control) - [Crux: How to efficiently virtualize the CPU with Control?](#crux-how-to-efficiently-virtualize-the-cpu-with-control) - [Basic Technique: Limited Direct Execution](#basic-technique-limited-direct-execution) - [How the program is executed on low level](#how-the-program-is-executed-on-low-level) - [Cons of Limited Direct Execution](#cons-of-limited-direct-execution) - [Problem 1: Restricted Operations](#problem-1-restricted-operations) - [Problem 2: Switching between Processes (context-switching)](#problem-2-switching-between-processes-context-switching)
-<!--toc:end-->
+  - [Virtualization: The Process](#virtualization-the-process) - [CPU Virtualization](#cpu-virtualization) - [Time Sharing vs. Space Sharing](#time-sharing-vs-space-sharing) - [Context Switching](#context-switching) - [A Process](#a-process) - [Process API](#process-api) - [Create](#create) - [Destroy](#destroy) - [Wait](#wait) - [Miscellaneous Control](#miscellaneous-control) - [Status](#status) - [Process Creation: A little more detail](#process-creation-a-little-more-detail) - [Loaded into the memory, What now?](#loaded-into-the-memory-what-now) - [Process States](#process-states) - [Running](#running) - [Ready](#ready) - [Blocked](#blocked) - [Data structures](#data-structures) - [Summary](#summary) - [Interlude: Process API](#interlude-process-api) - [fork()](#fork) - [wait()](#wait) - [exec()](#exec) - [fork() and exec()](#fork-and-exec) - [Shells (Scripting)](#shells-scripting) - [Redirecting and writing to a file](#redirecting-and-writing-to-a-file) - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution) - [Challenges when building the virtualization machinery](#challenges-when-building-the-virtualization-machinery) - [Performance](#performance) - [Control](#control) - [Crux: How to efficiently virtualize the CPU with Control?](#crux-how-to-efficiently-virtualize-the-cpu-with-control) - [Basic Technique: Limited Direct Execution](#basic-technique-limited-direct-execution) - [How the program is executed on low level](#how-the-program-is-executed-on-low-level) - [Cons of Limited Direct Execution](#cons-of-limited-direct-execution) - [Problem 1: Restricted Operations](#problem-1-restricted-operations) - [Problem 2: Switching between Processes (context-switching)](#problem-2-switching-between-processes-context-switching) - [Context Switching and Process state Management](#context-switching-and-process-state-management)
+  <!--toc:end-->
 
 # Concepts
 
@@ -472,7 +448,7 @@ The heap and stack and other parts of the memory space of the program are re-ini
 
 The fork() and exec() calls are very powerful way for creating multi processed program. And I should make something fun of that.
 
-# Stevens and Rago chapters: Process Control, Process Relationships and Signals
+**Stevens and Rago chapters: Process Control, Process Relationships and Signals**
 
 #### Shells (Scripting)
 
@@ -616,3 +592,23 @@ The timer can also be turned off - privileged operation
 > [!NOTE] Hardware also have responsibility when the interruption occurs
 > and that is: save necessary state.
 > so that it could be restored from
+
+###### Context Switching and Process state Management
+
+Now when the OS regains control, whatever approach might be used cooperative or with timer-interrupt, a decision has to be made what process next should be running.
+
+That decision makes **scheduler**, and that is whether to continue running the currently running-process, or switch to a different one.
+
+If the decision is made to switch, the OS executes low-level code that which we refer to as **context-switching**.
+
+A **context-switch** is conceptually simple: all the OS has to do is;
+
+When the return from trap is finally executed, instead of returning to the process that was running, the system resumes execution of another process.
+
+1. **Save state:** save a few register values for the currently-executing process (onto its kernel-stack)
+2. **Restore state:** restore a few for the soon-to-be-executing process (from its kernel-stack)
+
+To **save the context of the currently running process**, the OS will execute some low-level assembly code to: **save the general purpose registers, PC (program counter), as well as the kernel stack pointer of the currently running process**
+and then **restore said registers, PC and switch to kernel stack for the soon to be executing process**
+
+**Vizualization of the Context Switch**

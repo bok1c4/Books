@@ -11,7 +11,7 @@
   - [What are CPU registers?](#what-are-cpu-registers)
   - [Types of Registers](#types-of-registers)
 - [Program Execution](#program-execution)
-  - [System call (user-mode, kernel-mode)](#system-call-user-mode-kernel-mode)
+  - [System call (user-mode, kernel-mode)](#system-call-user-mode-kernel-mode) - [How is system call executed (Procedure call)](#how-is-system-call-executed-procedure-call) - [How does trap know which code to run inside the OS?](#how-does-trap-know-which-code-to-run-inside-the-os) - [Context Switch](#context-switch) - [What is saved and what is restored?](#what-is-saved-and-what-is-restored) - [Vizualization of the Context Switch](#vizualization-of-the-context-switch) - [Switching Contexts](#switching-contexts)
   <!--toc:end-->
 
 ## Some necessary concepts that needs to be covered
@@ -155,7 +155,73 @@ All that code is hard-coded and written in assembly, so we don't need to write a
 
 1. The kernel setups the **trap table** at boot time.
    When the machine boots up, it does so in privileged (kernel-mode), and thus is free to configure machine hardware as need be.
-   OS thus does is to tell the hardware what code to run when certain even occurs.
+   OS thus does is to tell the hardware what code to run when certain event occurs.
    When the keyboard button is pressed, when disk is asked to read and etc...
 2. The OS informs the hardware of **the locations of these trap handlers**
 3. Once the hardware is informed it remembers until the machine is rebooted. And that's how the hardware knows what to do.
+
+#### Context Switch
+
+When the **scheduler** actually decides to switch to another process that is called context switching. **The job of the context switch is to save and restore**.
+
+1. Save a few register values for the **currently-executing process** onto kernel-stack
+2. Restore a few register values for **soon to be executing process** from kernel-stack
+
+##### What is saved and what is restored?
+
+**Saved: general purpose registers, PC (program-counter), kernel stack pointer (base) of the currently-executing process**
+
+**Restored: said registers, PC and switch to kernel-stack for the soon to be executing process**
+
+When the OS finally executes the **return from trap the soon to be running process becomes currently-executing process**
+
+And with that context switch is completed.
+
+##### Vizualization of the Context Switch
+
+OS:
+
+1. boots
+2. initializes trap table
+   starts interrupt timer
+
+3. Program:
+   User executes Process A (Interrupted by the timer-interrupt)
+   User executes Process B (Switch from A to B)
+
+4. Handle the trap call (syscall) **switch()**:
+   **save reges(A) to proc-struct(A)**
+   **restore reges(B) from proc-struct(B)**
+   **switch to k-stack(B)**
+   **return-from-trap(B)**
+
+Hardware:
+
+1. remembers addresses of syscall handler (remembers where the trap table is)
+   time handler
+   starts the timer
+   interrupt CPU in X seconds
+2. timer interrupt
+3. **save reges(A) to k-stack(A)**
+   **move to kernel-mode**
+   **jump to trap handler**
+   **restore regs(B) from k-stack(B)**
+   **move to user mode**
+   **jump B's PC**
+
+Process A is interrupted and the OS decides to switch to Process B.
+System call switch() does next: **context switch**
+
+1. saves the register values into the process structure of A
+2. restores the registers of Process B from its process structure
+3. **switch contexts**
+
+##### Switching Contexts
+
+1. Changing the **stack pointer to use B's kernel stack (and not A's - current one)**
+2. Finally the OS **returns from trap which restores B's register state and starts running it**
+
+> [!NOTE] There are two types of register saves/restores that happen during this protocol.
+> **First: when the timer interrupt occurs; in this case, the user register state of the running process is implicitly saved by the hardware**
+>
+> **Second: when the OS decides to switch from A to B; in this case, the kernel register state is explicitly saved by the software. But this time into memory in the process structure of the process**
