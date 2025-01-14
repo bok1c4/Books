@@ -1,19 +1,3 @@
-<!--toc:start-->
-
-- [Some necessary concepts that needs to be covered](#some-necessary-concepts-that-needs-to-be-covered)
-- [Stack](#stack)
-  - [Key Characteristics](#key-characteristics)
-  - [Usage](#usage)
-- [Heap](#heap)
-  - [Key Characteristics](#key-characteristics)
-  - [Usage](#usage)
-- [Registers](#registers)
-  - [What are CPU registers?](#what-are-cpu-registers)
-  - [Types of Registers](#types-of-registers)
-- [Program Execution](#program-execution)
-  - [System call (user-mode, kernel-mode)](#system-call-user-mode-kernel-mode) - [How is system call executed (Procedure call)](#how-is-system-call-executed-procedure-call) - [How does trap know which code to run inside the OS?](#how-does-trap-know-which-code-to-run-inside-the-os) - [Context Switch](#context-switch) - [What is saved and what is restored?](#what-is-saved-and-what-is-restored) - [Vizualization of the Context Switch](#vizualization-of-the-context-switch) - [Switching Contexts](#switching-contexts)
-  <!--toc:end-->
-
 ## Some necessary concepts that needs to be covered
 
 Necessary Concepts in Low-Level Programming
