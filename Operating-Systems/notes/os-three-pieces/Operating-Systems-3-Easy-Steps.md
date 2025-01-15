@@ -41,7 +41,8 @@
         - [Second Approach: Preemptive Multitasking](#second-approach-preemptive-multitasking)
       - [Context Switching and Process Management](#context-switching-and-process-management)
 - [Scheduling](#scheduling)
-<!--toc:end-->
+  - [Crux: How to Develop the Scheduling Policy?](#crux-how-to-develop-the-scheduling-policy) - [Steps taken before building a scheduling policy](#steps-taken-before-building-a-scheduling-policy) - [Determining the Workload](#determining-the-workload) - [Scheduling metrics (Turnaround and Fairness)](#scheduling-metrics-turnaround-and-fairness) - [Turnaround](#turnaround) - [Fairness](#fairness) - [First in First Out (First Comes First Served (FCFS))](#first-in-first-out-first-comes-first-served-fcfs) - [Example how we calculate the turnaround time](#example-how-we-calculate-the-turnaround-time)
+  <!--toc:end-->
 
 # Concepts
 
@@ -383,3 +384,135 @@ To **save the context of the currently running process**, the OS will execute so
 and then **restore said registers, PC and switch to kernel stack for the soon to be executing process**
 
 # Scheduling
+
+## Crux: How to Develop the Scheduling Policy?
+
+- What are the key assumptions?
+- What metrics are important?
+- What basic approaches have been used in the earliest of computer systems?
+
+Processes running in the system are collectively called **workload**.
+
+### Steps taken before building a scheduling policy
+
+**Goal: is to make fully-operational scheduling discipline(policy)**
+
+1. Determine the Workload
+   By determining the workload we can optimize our policies accordingly
+2. Scheduling Metrics
+   **Turnaround time**
+   **Fairness**
+
+#### Determining the Workload
+
+We are making the assumptions about the workload.
+
+**Jobs running on the system:**
+
+1. Each job runs for the same amount of time.
+2. All jobs arrive at the same time.
+3. All jobs only use CPU. (they perform no I/O)
+4. The run-time of each job is known.
+
+#### Scheduling metrics (Turnaround and Fairness)
+
+##### Turnaround
+
+**Turnaround time is the performance metric of the scheduled jobs.**
+
+**The turnaround time of a job is defined as time at which the job completes minus the time job has arrived.**
+
+**T = turnaround**
+**T = 'T completion' - 'T arrived'**
+
+##### Fairness
+
+**Fairness is another metric that measures how equally is CPU spread across scheduled jobs.**
+
+#### First in First Out (First Comes First Served (FCFS))
+
+The scheduler is implemented with a Queue (FIFO).
+So the job comes in and goes right out.
+
+##### Example how we calculate the turnaround time
+
+There are three jobs A B C, they come in that order to the queue, calculate the turnaround time.
+**Each job runs or 10 seconds each**
+
+**Queue looks something like this:**
+
+- **0s**
+
+A - takes 10 seconds to execute
+
+- **10s**
+
+B - takes 10 seconds to execute
+
+- **20s**
+
+C - takes 10 seconds to execute
+
+- **30s**
+
+**A = 10s (10)**
+**B = A + 10s (10 + 10) -> 20s**
+**C = B + 10s (10 + 10 + 10) -> 30s**
+
+**T = (A + B + C) / 3**
+
+T = 60 / 3
+
+**T = 20s** - performance metric calculated.
+
+##### Why is FIFO not that great (FCFS - First Comes First Served)
+
+When we have different lengths of the jobs, for example
+A - 100s
+B - 10s
+C - 10s
+
+Turnaround time: 110s (not great)
+
+So the B and C job is behind one big A job
+
+#### Shortest Job Next (SJN)
+
+Here comes SJN to fix the stuff.
+
+The SJN will execute jobs in this order:
+B, C, A
+
+T = 10 + 20 + 120 / 3
+Turnaround time now is 50s.
+More then factor of two improvement.
+
+Still we have one problem with the SJN.
+
+##### Problem with pure SJN (No preemption)
+
+If A comes a bit earlier then the B and C. The A will run before the shorter B and C processes.
+So again we get bigger turnaround time
+
+#### Shortest time to Completion First (STCF - has preemption)
+
+**Preemptive Shortest Job First (PSJF)**
+
+So we are **pausing (preempting)** the job A and running B and C, then go back to A.
+
+**Any time the new job enters the system, it compares which job has least time left and then schedules that one.**
+
+STCF preempts the A and run B and C to completion; only when they are finished would A's remaining time be scheduled.
+
+**So the A came first, and we take for granted that remaining time left for A is 90s before the B and C came onto the queue.**
+
+A starts execution immediately because it is the first to arrive (from t = 0 to t = 10). However, at t = 10, processes B and C arrive, and SJF prioritizes the processes with the shortest execution time (10 seconds each).
+Thus, A is preempted at t = 10.
+
+B gets the CPU and executes from t = 10 to t = 20.
+
+C is next and executes from t = 20 to t = 30.
+
+A then resumes its execution from t = 30 to t = 120 (with 90 seconds of execution time remaining).
+
+T = ((120 - 0) + (20-10) + (30-10)) / 3 = 50s

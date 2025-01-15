@@ -198,7 +198,7 @@ System call switch() does next: **context switch**
 
 1. saves the register values into the process structure of A
 2. restores the registers of Process B from its process structure
-3. **switch contexts**
+3. **switch contexts** (return from trap)
 
 ##### Switching Contexts
 
