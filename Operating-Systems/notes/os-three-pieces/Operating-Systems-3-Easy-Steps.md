@@ -402,6 +402,7 @@ Processes running in the system are collectively called **workload**.
 2. Scheduling Metrics
    **Turnaround time**
    **Fairness**
+   **Response time**
 
 #### Determining the Workload
 
@@ -428,6 +429,14 @@ We are making the assumptions about the workload.
 ##### Fairness
 
 **Fairness is another metric that measures how equally is CPU spread across scheduled jobs.**
+
+##### Response time
+**Response time is defined as the time from when the job arrives in a system to the first time it is scheduled.**
+
+T = Response-time
+
+T = T(first-run) - T(arrival)
+
 
 #### First in First Out (First Comes First Served (FCFS))
 
@@ -516,3 +525,25 @@ C is next and executes from t = 20 to t = 30.
 A then resumes its execution from t = 30 to t = 120 (with 90 seconds of execution time remaining).
 
 T = ((120 - 0) + (20-10) + (30-10)) / 3 = 50s
+
+#### Round Robin 
+
+Round robin fixes key Responsibility for scheduler.
+
+##### Crux: How can we build a scheduler that is sensitive to response time 
+
+Round robin runs jobs in **time-slice** way (sometimes called **scheduling quantum**).
+It runs currently executing process for some time, then switches to another one and runs it for some time...
+It repeatedly does so until jobs are finished.
+
+> [!NOTE]
+> The length of the time-slice needs to be multiple with timer-interrupt period.
+> Example:
+> If the timer-interrupt period is 10ms, the time-slice could be 10,20 or any other multiple of 10ms.
+
+##### Example:
+
+Assume that three jobs A,B, and C arrive at the time in the system, and that they each wish to run for 5 seconds.
+An SJF scheduler runs each job to completion before running other one.
+
+In Contrast RR with cycle through the 
