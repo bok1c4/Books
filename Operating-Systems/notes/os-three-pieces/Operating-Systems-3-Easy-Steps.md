@@ -67,6 +67,11 @@
         - [Example](#example)
         - [Overlapping](#overlapping)
       - [Unknown Job Length](#unknown-job-length)
+  - [Scheduling: The Multi-Level Feedback Queue (MLFQ)](#scheduling-the-multi-level-feedback-queue-mlfq)
+    - [MLFQ: Basic Rules](#mlfq-basic-rules)
+      - [MLFQ: Assigning Behavior Example](#mlfq-assigning-behavior-example)
+        - [Rule 1 and Rule 2](#rule-1-and-rule-2)
+    - [Attempt #1: How to change Priority](#attempt-1-how-to-change-priority)
 <!--toc:end-->
 
 # Concepts
@@ -672,4 +677,63 @@ That way we effectively use our system.
 
 The OS rearly knows about the job time to execute.
 
-## Scheduling: The Multi-Level Feedback Queue
+## Scheduling: The Multi-Level Feedback Queue (MLFQ)
+
+Problems that MLFQ tries to solve are:
+
+1. Optimize the turnaround time (running shorter jobs first) - we don't not the length
+2. Make a system feel responsive to the user (lower response time)
+
+Given that in general, **we don't know anything about a process, how can we build a scheduler to achieve those goals? How can the scheduler learn, as the system runs, the characteristics of the jobs it is running, and thus make better scheduling decisions?**
+
+
+**Crux: How can we design a scheduler that both minimizes response time for interactive jobs, while also minimizing turnaround time without a priority knowledge of job length?**
+
+> [!NOTE]
+> Multi-Level Feedback is excellent example of a system that learns from the past to predict the future. That is common in operating systems and many other places in CS.
+> Including: Hardware branch predictors, caching algorithms.
+
+### MLFQ: Basic Rules
+
+MLFQ has a number of distinct **queues**, each assigned a different **priority level**.
+
+**Job that is ready to run, it is on a single queue.**
+
+**MLFQ uses priorities to decide which job should run at any given time.**
+**Job with higher priority (a job on a higher queue) is chosen to run.**
+
+**More then one job can be on a given queue, in that case we use RR to time-slice them**
+
+**Key lies in how MLFQ assigns priorities.**
+**Rather then giving fixed priority to a queue (jobs), MLFQ varies them with observed behavior.**
+
+#### MLFQ: Assigning Behavior Example
+
+**If a job repeatedly relinquishes the CPU while waiting for input from the keyboard, MLFQ will keep its priority high (set on the highest queue). (Interactive Process)**
+
+**If a job on the other hand uses the CPU intensively for long periods of time, MLFQ   will reduce its priority.**
+
+In this way **MLFQ will try to lean about process as they run and thus use the history of the job to predict is future behavior.**
+
+##### Rule 1 and Rule 2
+
+**Rule 1: If Priority(A) > Priority(B), A runs (B doesn't)**
+**Rule 2: If Priority(A) == Priority(B), A & B run in RR**
+
+PRIORITIES CHANGE OVER TIME.
+
+### Attempt #1: How to change Priority with Rules 3 and 4
+
+**Rule 3: When job enters the system it is placed as a highest priority queue. (the topmost queue)**
+**Rule 4a: If a job uses up an entire time-slice while running, its priority is reduced. (moves down one queue)**
+**Rule 4b: If a job gives up the CPU before the time slice is up, it stays at the same priority level.**
+
+#### Problems with this current development of MLFQ
+
+1. Starvation:
+    If there are too many interactive processes the long-running ones would never get to be processed (they will consume all of the CPU time)
+
+2. Gaming the Scheduler:
+  Someone can rewrite the program to **game the scheduler**. It means that it can write it to use 99% of the time slice and in last possible moment to issue an I/O request, with that keeping the same priority.
+
+### Attempt #2: The Priority Boost
