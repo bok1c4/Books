@@ -1,5 +1,4 @@
 <!--toc:start-->
-
 - [Concepts](#concepts)
   - [Key Topics](#key-topics)
     - [1. Virtualization](#1-virtualization)
@@ -25,8 +24,8 @@
   - [wait()](#wait)
   - [exec()](#exec)
   - [fork() and exec()](#fork-and-exec)
-    - [Shells (Scripting)](#shells-scripting)
-    - [Redirecting and Writing to a File](#redirecting-and-writing-to-a-file)
+      - [Shells (Scripting)](#shells-scripting)
+      - [Redirecting and Writing to a File](#redirecting-and-writing-to-a-file)
 - [Mechanism: Limited Direct Execution](#mechanism-limited-direct-execution)
   - [Challenges of CPU Virtualization](#challenges-of-cpu-virtualization)
     - [1. Performance](#1-performance)
@@ -41,8 +40,34 @@
         - [Second Approach: Preemptive Multitasking](#second-approach-preemptive-multitasking)
       - [Context Switching and Process Management](#context-switching-and-process-management)
 - [Scheduling](#scheduling)
-  - [Crux: How to Develop the Scheduling Policy?](#crux-how-to-develop-the-scheduling-policy) - [Steps taken before building a scheduling policy](#steps-taken-before-building-a-scheduling-policy) - [Determining the Workload](#determining-the-workload) - [Scheduling metrics (Turnaround and Fairness)](#scheduling-metrics-turnaround-and-fairness) - [Turnaround](#turnaround) - [Fairness](#fairness) - [First in First Out (First Comes First Served (FCFS))](#first-in-first-out-first-comes-first-served-fcfs) - [Example how we calculate the turnaround time](#example-how-we-calculate-the-turnaround-time)
-  <!--toc:end-->
+  - [Scheduling: Introcution](#scheduling-introcution)
+    - [Steps taken before building a scheduling policy](#steps-taken-before-building-a-scheduling-policy)
+      - [Determining the Workload](#determining-the-workload)
+      - [Scheduling metrics (Turnaround and Fairness)](#scheduling-metrics-turnaround-and-fairness)
+        - [Turnaround](#turnaround)
+        - [Fairness](#fairness)
+        - [Response time](#response-time)
+      - [First in First Out (First Comes First Served (FCFS))](#first-in-first-out-first-comes-first-served-fcfs)
+        - [Example how we calculate the turnaround time](#example-how-we-calculate-the-turnaround-time)
+        - [Why is FIFO not that great (FCFS - First Comes First Served)](#why-is-fifo-not-that-great-fcfs-first-comes-first-served)
+      - [Shortest Job Next (SJN)](#shortest-job-next-sjn)
+        - [Problem with pure SJN (No preemption)](#problem-with-pure-sjn-no-preemption)
+      - [Shortest time to Completion First (STCF - has preemption)](#shortest-time-to-completion-first-stcf-has-preemption)
+      - [Round Robin](#round-robin)
+        - [Crux: How can we build a scheduler that is sensitive to response time](#crux-how-can-we-build-a-scheduler-that-is-sensitive-to-response-time)
+        - [Example:](#example)
+          - [RR Response Time](#rr-response-time)
+          - [SJF Response Time](#sjf-response-time)
+        - [Amortization](#amortization)
+          - [Amortization: Example](#amortization-example)
+        - [RR Example with turnaround time](#rr-example-with-turnaround-time)
+        - [Trade off](#trade-off)
+        - [Overview](#overview)
+      - [Incorporating I/O](#incorporating-io)
+        - [Example](#example)
+        - [Overlapping](#overlapping)
+      - [Unknown Job Length](#unknown-job-length)
+<!--toc:end-->
 
 # Concepts
 
@@ -385,7 +410,9 @@ and then **restore said registers, PC and switch to kernel stack for the soon to
 
 # Scheduling
 
-## Crux: How to Develop the Scheduling Policy?
+## Scheduling: Introcution
+
+**Crux: How to Develop the Scheduling Policy?**
 
 - What are the key assumptions?
 - What metrics are important?
@@ -546,4 +573,103 @@ It repeatedly does so until jobs are finished.
 Assume that three jobs A,B, and C arrive at the time in the system, and that they each wish to run for 5 seconds.
 An SJF scheduler runs each job to completion before running other one.
 
-In Contrast RR with cycle through the 
+In Contrast RR with cycle through the jobs quickly.
+
+So the Response time for both scheduler algorithms:
+
+###### RR Response Time
+
+(0 + 1 + 2) / 3 = 1
+
+###### SJF Response Time
+
+(0 + 5 + 10) / 3 = 5
+
+##### Amortization
+
+The cost of context-switch might dominate the overall performance of the RR scheduler.
+Because switching the processes takes time and resources.
+
+Make it long enough to **amortize** the cost of switching without
+making it so long that the system is no longer responsive.
+
+###### Amortization: Example
+
+
+If the **time slice is set to 10ms, and the context-switch cost is 1ms, roughly 10% of time is spent context switching and is thus wasted**.
+
+But if we set **time slice to 100ms**, and the **context-switch is at 1ms**, briefly time spent is **1% on context-switching** and thus the **cost of time-slicing has been amortized**.
+
+##### RR Example with turnaround time
+
+A,B, and C each running 5 seconds arrive at the same time.
+RR time-slice scheduler is set to 1 second.
+
+A finishes at 13, B at 14 and C at 15 seconds each. With an average of 14. AWFUL!
+
+RR is indeed one of the **worst** policies if **turnaround time is our metric**.
+RR is stretching out jobs as long as it can, by only running each job for a short bit of time before moving to the next one.
+
+Because turnaround time only cares about when jobs finish, RR is nearly pessimal, even worse then FCFS (FIFO) in many cases.
+
+Any policy that is **fair**, eventually divides the CPU among active processes on a small time scale, will perform **poorly on metrics such as turnaround time**.
+
+So we need to make a trade off.
+
+##### Trade off
+
+If you are willing to be **unfair**, you can **run shorter jobs to completion**, but at the **cost of response time**.
+
+But if we **value fairness**, **response time is lowered, but at cost of turnaround time**. 
+
+
+##### Overview
+
+We have developed two types of schedulers. 
+With assumptions in mind:
+
+- Jobs do no I/O -> Assumption 3
+- Runtime of each job is known -> Assumption 4
+
+1. SJF (Shortest Job First), STCF (Shortest time to Completion First)
+  **optimizes turnaround time (unfair)**
+2. RR (Round Robin)
+  **optimizes response time (fairness)**
+
+#### Incorporating I/O
+
+All programs perform I/O.
+
+
+Currently running process won't be using CPU during the I/O; it is **blocked**, waiting for **I/O request completion**.
+
+##### Example
+
+If the **I/O request is sent to a hard-disk drive**, the process **might be blocked for a few milliseconds or longer, depending on the current I/O load of the drive**.
+
+> [!TIP] Scheduling another process when CPU is blocked for currently running one
+> **Thus the scheduler when the currently-running-process is blocked waiting for the I/O response; should probably schedule another job on the CPU at that time.**
+
+> [!TIP] Scheduler also makes the decision when the I/O completes.
+> **When that occurs interrupt is raised, and the OS runs and moves the process that issued the I/O from blocked back to the ready state.**
+
+
+##### Overlapping
+
+We have A and B, which needs **50ms of CPU time**.
+**A runs for 10ms and then issues an I/O request (assume here that I/O take 10ms)**, whereas **B simply uses the CPU for 50ms and performs no I/O**.
+
+How can we optimize the scheduler?
+
+If we are just going to build a STCF and just run one job and then the other without considering the I/O into account makes little sense.
+
+> [!TIP] Take I/O into account and build the scheduler (Overlapping)
+
+When the CPU is **blocked** for process A we should run a process B. When the I/O finishes and the process from **blocked state** becomes **ready** we should continue running the process A until I/O request again occurs.
+That way we effectively use our system. 
+
+#### Unknown Job Length
+
+The OS rearly knows about the job time to execute.
+
+## Scheduling: The Multi-Level Feedback Queue
