@@ -71,7 +71,11 @@
     - [MLFQ: Basic Rules](#mlfq-basic-rules)
       - [MLFQ: Assigning Behavior Example](#mlfq-assigning-behavior-example)
         - [Rule 1 and Rule 2](#rule-1-and-rule-2)
-    - [Attempt #1: How to change Priority](#attempt-1-how-to-change-priority)
+    - [Attempt #1: How to change Priority with Rules 3 and 4](#attempt-1-how-to-change-priority-with-rules-3-and-4)
+      - [Problems with this current development of MLFQ](#problems-with-this-current-development-of-mlfq)
+    - [Attempt #2: The Priority Boost (Time Period - Fixing Starvation)](#attempt-2-the-priority-boost-time-period-fixing-starvation)
+    - [Attempt #3: Better Accounting (Time-Slice used - Fixing Gaming the Scheduler)](#attempt-3-better-accounting-time-slice-used-fixing-gaming-the-scheduler)
+      - [Explained](#explained)
 <!--toc:end-->
 
 # Concepts
@@ -730,10 +734,40 @@ PRIORITIES CHANGE OVER TIME.
 
 #### Problems with this current development of MLFQ
 
-1. Starvation:
-    If there are too many interactive processes the long-running ones would never get to be processed (they will consume all of the CPU time)
+1. **Starvation:**
+    If there are **too many interactive processes the long-running ones would never get to be processed (they will consume all of the CPU time)**
 
-2. Gaming the Scheduler:
-  Someone can rewrite the program to **game the scheduler**. It means that it can write it to use 99% of the time slice and in last possible moment to issue an I/O request, with that keeping the same priority.
+2. **Gaming the Scheduler:**
+  Someone can rewrite the program to **game the scheduler**. It means that it can write it to **use 99% of the time slice and in last possible moment to issue an I/O request, with that keeping the same priority.**
 
-### Attempt #2: The Priority Boost
+### Attempt #2: The Priority Boost (Time Period - Fixing Starvation)
+
+To not starve the long-running process, with many interactive ones. We need to add a new rule to the scheduler.
+
+**Rule 5: After some period of time, move all the jobs in the system to the topmost queue.**
+
+The **Time Period** is the time length, which tells to the scheduler **when all the jobs should be pushed to the topmost queue (highest priority).**
+
+**There is also a concern what time is set for Time Period, if its sets too high, long-running jobs could starve. If its set too low, an interactive jobs may not get a proper share of the CPU.**
+
+The values like time-period are sometimes referred to as **voo-doo constants**.
+
+### Attempt #3: Better Accounting (Time-Slice used - Fixing Gaming the Scheduler)
+
+The solution here is to perform **better accounting of the CPU time at each level of MLFQ.**
+**Instead of forgetting how much of a time-slice a process used at given level, the scheduler should keep track of it.**
+
+**Rule 4: One a job uses up its time allotment at a given level (regardless of how many times it has given up the CPU), its priority is reduced**
+
+#### Explained
+
+Without any protection from
+gaming, a process can issue an I/O just before a time slice ends and thus
+dominate CPU time. With such protections in place, regardless of the
+I/O behavior of the process, it slowly moves down the queues, and thus
+cannot gain an unfair share of the CPU.
+
+> [!TIP] Avoid Voo-Doo Constants
+> Time Period should be avoided if possible (says in the book)
+> Too much complication with tables, configuring everything
+
