@@ -76,6 +76,11 @@
     - [Attempt #2: The Priority Boost (Time Period - Fixing Starvation)](#attempt-2-the-priority-boost-time-period-fixing-starvation)
     - [Attempt #3: Better Accounting (Time-Slice used - Fixing Gaming the Scheduler)](#attempt-3-better-accounting-time-slice-used-fixing-gaming-the-scheduler)
       - [Explained](#explained)
+  - [Scheduling: Proportional Share (Fair-Share scheduler) Lottery Scheduling](#scheduling-proportional-share-fair-share-scheduler-lottery-scheduling)
+    - [Basic Concept: Tickets Represent Your Share](#basic-concept-tickets-represent-your-share)
+    - [Ticket Mechanism](#ticket-mechanism)
+      - [Ticket Currency](#ticket-currency)
+      - [Ticker transfer (Ticket inflation)](#ticker-transfer-ticket-inflation)
 <!--toc:end-->
 
 # Concepts
@@ -771,3 +776,112 @@ cannot gain an unfair share of the CPU.
 > Time Period should be avoided if possible (says in the book)
 > Too much complication with tables, configuring everything
 
+## Scheduling: Proportional Share (Fair-Share scheduler) Lottery Scheduling
+
+**Instead of optimizing for Turnaround time, or Response time. The Proportional Share scheduler tries to guarantee that each job obtain a certain percentage of CPU time.**
+
+An excellent modern example of proportional-share scheduling is known as **lottery-scheduling**.
+
+**Hold a lottery to determine which process should get to run next; processes that should run more often should be given more chances to win the lottery.**
+
+**Crux: How to Share the CPU Proportionally?**
+**How can we design the scheduler to share the CPU in a proportional manner? What are the key mechanisms for doing so? How effective are they?**
+
+### Basic Concept: Tickets Represent Your Share
+
+Underlying lottery-scheduling is one very basic concept: **tickets**, which are used to represent the **share of a resource that a process should receive.**
+
+Example: **Imagine two processes A and B. A has 75 tickets while B has only 25. Thus, what we would like is for A to receive 75% of CPU time and B the remaining 25% of CPU time.**
+
+Lottery scheduling achieves this probabilistically by holding a lottery every so often. Holding a lottery is straightforward: the scheduler must know how many total tickets are (in our example 100).
+The scheduler then picks
+
+> [!TIP] Use Randomness
+> It is efficient, fast, and takes less memory then traditional algorithms.
+
+Assuming A holds tickets 0 through 74 and B 75 through 99, the winning ticket simply determines whether A or B runs. The scheduler then loads the state of that winning process and runs it.
+
+Here is an example of output how lottery scheduler's winning tickets.
+
+A  B  A  A  B  A  A  A  A  A  A  B  A  B  A  A  A  A A  A
+63 85 70 39 76 17 29 41 36 39 10 99 68 83 63 62 43 0 49 49
+
+So as we can see the lottery-scheduler needs randomness. The use of randomness in lottery-scheduling leads to a probabilistic correctness in meeting the desired proportion, but no guarantee.
+
+In our example: B only gets to run 4 out of 20 times slices (20%), instead of the desired 25% allocation.
+However the longer these two jobs compete, the more likely they are to achieve the desired percentages.
+
+> [!TIP] Use tickets to represent a share
+
+
+### Ticket Mechanism
+
+Lottery scheduling also provides a number of mechanisms to manipulate tickets in different and sometimes useful ways.
+
+One way is with the concept of **ticket currency.**
+
+#### Ticket Currency
+
+Currency allows a user with a set of tickets to allocate tickets among their own jobs in whatever currency they would like; 
+
+Example:
+
+**Users A and B have each been given 100 tickets. (System currency 200 tickets).**
+**User A is running two jobs, A-1 and A-2 and gives them 500 tickets in A currency. (A currency there are 1000 tickets, A-1 500 and A-2 500).**
+**User B in running only one job, B-1 and gives it 10 tickets in B currency. (B currency there are 10 tickets and B-1 took it all).**
+
+**Lottery works on system currency. (200 tickets)**
+
+User A -> 500 (A's currency) to A-1 -> A-1 -> 50 (global currency)
+User A -> 500 (A's currency) to A-2 -> A-2 -> 50 (global currency)
+User B -> 10 (A's currency) to B-1 -> B-1 -> 100 (global currency)
+
+**Total: 50 + 50 + 100 = 200 tickets**
+
+#### Ticker transfer (Ticket inflation)
+
+**With transfer tickets can temporarily hand off its tickets to another process.**
+
+Example use-case:
+
+**This ability is especially useful in a client/server setting,
+where a client process sends a message to a server asking it to do some work on the client's behalf.
+To speed up the work, the client passes the tickets to the server and thus try to maximize the performance on the server, while the server is handling the clients request.**
+
+**When finished the server then transfers back the tickets to client behalf.**
+Though sometimes ticket inflation can sometimes be a useful technique.
+
+But if the **processes do not trust each other**, this makes **little sense**; one greedy process could give itself a vast number of tickets and take over the machine.
+
+### Implementation of Lottery Scheduling Decision
+
+For implementing the Lottery Scheduling Decision, all we need is:
+
+1. Good random number generator to pick the winning ticket.
+2. Data structure to track the processes of the system (e.g linked-lists)
+3. Total number of tickets.
+
+We are assuming that we are keeping the processes in a list (linked-lists).
+
+
+IMPLEMENTING THIS:
+**Head -> Node (Job:A Tickets: 100) -> Node (Job: B Tickets: 50) -> Node (Job: C Tickets: 250) -> NULL (Tail)**
+
+To make a scheduling decision, we have to:
+1. Pick a random number (the winner), from the total number of tickets.
+   Lets say we pick the number of tickets 300.
+   Then we simply traverse the list, with a simple counter used to help us find the winner.
+
+2. Code walks (traverses) the list of processes, adding each ticket value to **counter** until the value **exceeds winner**.
+
+3. Once that is the case, the current list element is the winner.
+
+Example:
+
+Winning ticket is 300.
+
+1. Counter is incremented to 100 to account for A's tickets; because the 100 is less then 300, the loop continues.
+2. Then counter would be updated to 150 (B's tickets), still less then 300 and thus we again continue.
+3. Counter is updated to 400 (greater then 300) and thus we break out of the loop with current pointing at C (the winner)
+
+To make this process more efficient, it might generally be best to organize the list in sorted order. From the highest number of tickets to lowest.
