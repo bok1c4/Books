@@ -40,7 +40,7 @@
         - [Second Approach: Preemptive Multitasking](#second-approach-preemptive-multitasking)
       - [Context Switching and Process Management](#context-switching-and-process-management)
 - [Scheduling](#scheduling)
-  - [Scheduling: Introcution](#scheduling-introcution)
+  - [Scheduling: Introduction](#scheduling-introduction)
     - [Steps taken before building a scheduling policy](#steps-taken-before-building-a-scheduling-policy)
       - [Determining the Workload](#determining-the-workload)
       - [Scheduling metrics (Turnaround and Fairness)](#scheduling-metrics-turnaround-and-fairness)
@@ -428,7 +428,7 @@ and then **restore said registers, PC and switch to kernel stack for the soon to
 
 # Scheduling
 
-## Scheduling: Introcution
+## Scheduling: Introduction
 
 **Crux: How to Develop the Scheduling Policy?**
 
@@ -451,7 +451,7 @@ Processes running in the system are collectively called **workload**.
 
 #### Determining the Workload
 
-We are making the assumptions about the workload.
+We are making some blatantly non-realistic assumptions about the workload.
 
 **Jobs running on the system:**
 
@@ -476,6 +476,7 @@ We are making the assumptions about the workload.
 **Fairness is another metric that measures how equally is CPU spread across scheduled jobs.**
 
 ##### Response time
+
 **Response time is defined as the time from when the job arrives in a system to the first time it is scheduled.**
 
 T = Response-time
@@ -575,6 +576,9 @@ T = ((120 - 0) + (20-10) + (30-10)) / 3 = 50s
 
 Round robin fixes key Responsibility for scheduler.
 
+**We care about the response-time because for example if we are in the terminal and we type ls for example
+that process is scheduled on the processor and if we use STCF, we need first to wait for some other process to execute instead of our current one.**
+
 ##### Crux: How can we build a scheduler that is sensitive to response time 
 
 Round robin runs jobs in **time-slice** way (sometimes called **scheduling quantum**).
@@ -586,7 +590,7 @@ It repeatedly does so until jobs are finished.
 > Example:
 > If the timer-interrupt period is 10ms, the time-slice could be 10,20 or any other multiple of 10ms.
 
-##### Example:
+Example:
 
 Assume that three jobs A,B, and C arrive at the time in the system, and that they each wish to run for 5 seconds.
 An SJF scheduler runs each job to completion before running other one.
@@ -595,11 +599,11 @@ In Contrast RR with cycle through the jobs quickly.
 
 So the Response time for both scheduler algorithms:
 
-###### RR Response Time
+##### RR Response Time
 
 (0 + 1 + 2) / 3 = 1
 
-###### SJF Response Time
+##### SJF Response Time
 
 (0 + 5 + 10) / 3 = 5
 
@@ -612,7 +616,6 @@ Make it long enough to **amortize** the cost of switching without
 making it so long that the system is no longer responsive.
 
 ###### Amortization: Example
-
 
 If the **time slice is set to 10ms, and the context-switch cost is 1ms, roughly 10% of time is spent context switching and is thus wasted**.
 
@@ -649,7 +652,7 @@ With assumptions in mind:
 - Jobs do no I/O -> Assumption 3
 - Runtime of each job is known -> Assumption 4
 
-1. SJF (Shortest Job First), STCF (Shortest time to Completion First)
+1. SJF (Shortest Job First) and STCF (Shortest time to Completion First)
   **optimizes turnaround time (unfair)**
 2. RR (Round Robin)
   **optimizes response time (fairness)**
@@ -694,7 +697,7 @@ The OS rearly knows about the job time to execute.
 
 Problems that MLFQ tries to solve are:
 
-1. Optimize the turnaround time (running shorter jobs first) - we don't not the length
+1. Optimize the turnaround time (running shorter jobs first) - we don't know the length
 2. Make a system feel responsive to the user (lower response time)
 
 Given that in general, **we don't know anything about a process, how can we build a scheduler to achieve those goals? How can the scheduler learn, as the system runs, the characteristics of the jobs it is running, and thus make better scheduling decisions?**
@@ -768,6 +771,9 @@ The solution here is to perform **better accounting of the CPU time at each leve
 
 **Rule 4: One a job uses up its time allotment at a given level (regardless of how many times it has given up the CPU), its priority is reduced**
 
+So we have a state in the node for the time that is used in time-slice and if the currently-running-process takes same time to run it is moved down the queue,
+that way the gaming the scheduler is fixed.
+
 #### Explained
 
 Without any protection from
@@ -836,9 +842,9 @@ Example:
 
 **Lottery works on system currency. (200 tickets)**
 
-User A -> 500 (A's currency) to A-1 -> A-1 -> 50 (global currency)
-User A -> 500 (A's currency) to A-2 -> A-2 -> 50 (global currency)
-User B -> 10 (A's currency) to B-1 -> B-1 -> 100 (global currency)
+User A -> 500 (A's currency) to A-1, A-1 -> 50 (global currency)
+User A -> 500 (A's currency) to A-2, A-2 -> 50 (global currency)
+User B -> 10 (A's currency) to B-1, B-1 -> 100 (global currency)
 
 **Total: 50 + 50 + 100 = 200 tickets**
 
@@ -866,7 +872,6 @@ For implementing the Lottery Scheduling Decision, all we need is:
 3. Total number of tickets.
 
 We are assuming that we are keeping the processes in a list (linked-lists).
-
 
 IMPLEMENTING THIS:
 **Head -> Node (Job:A Tickets: 100) -> Node (Job: B Tickets: 50) -> Node (Job: C Tickets: 250) -> NULL (Tail)**
@@ -898,7 +903,7 @@ Example:
 R-1 = 10 - first job finishes at 10 seconds
 R-2 = 20 - second job finishes at 20 seconds
 
-**U = R-1 / R-2 ** = 0,5 seconds
+**U = R-1 / R-2** = 0,5 seconds
 
 When both jobs finishes nearly at the same time U (the scheduler) will be quite close to 1. 
 That is our goal.
