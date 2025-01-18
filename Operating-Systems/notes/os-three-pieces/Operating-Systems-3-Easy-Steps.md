@@ -81,6 +81,10 @@
     - [Ticket Mechanism](#ticket-mechanism)
       - [Ticket Currency](#ticket-currency)
       - [Ticker transfer (Ticket inflation)](#ticker-transfer-ticket-inflation)
+    - [Implementation of Lottery Scheduling Decision](#implementation-of-lottery-scheduling-decision)
+    - [Unfairness](#unfairness)
+    - [Stride Scheduling](#stride-scheduling)
+    - [Stride Scheduling vs Lottery Scheduling](#stride-scheduling-vs-lottery-scheduling)
 <!--toc:end-->
 
 # Concepts
@@ -885,3 +889,65 @@ Winning ticket is 300.
 3. Counter is updated to 400 (greater then 300) and thus we break out of the loop with current pointing at C (the winner)
 
 To make this process more efficient, it might generally be best to organize the list in sorted order. From the highest number of tickets to lowest.
+
+### Unfairness
+
+**Time of the first completed job, divided by the time that the second job completes. That's the unfairness metric**
+
+Example:
+R-1 = 10 - first job finishes at 10 seconds
+R-2 = 20 - second job finishes at 20 seconds
+
+**U = R-1 / R-2 ** = 0,5 seconds
+
+When both jobs finishes nearly at the same time U (the scheduler) will be quite close to 1. 
+That is our goal.
+
+**Perfectly fair scheduler, would have achieved 1**
+
+
+### Stride Scheduling 
+
+**Stride Scheduling is deterministic fair-share scheduler.**
+
+The Stride Scheduling is created because the randomness is not 100% accurate especially not on short time scales.
+
+Each job in the system **has a stride**, which is **inverse in proportion to the number of tickets it has**.
+
+How it Works:
+
+Jobs A, B, and C with 100, 50 and 250 tickets, 
+respectively we can compute the stride of each by
+dividing some large number by the number of tickets each process has been assigned.
+
+A - 100 tickets
+B - 50 tickets
+C - 250 tickets
+
+> [!NOTE] 10.000 is an example number used, it is recommended to use big values for getting stride
+
+Example:
+If we divide each of those ticket values by 10.000. We get the **stride value** of each process.
+
+How stride scheduler executes jobs:
+
+At iteration 0 the pass value for all of the processes is 0.
+When all of the pass values are 0, the scheduler picks the lowest stride value or random pick and executes that process.
+
+1. Runs the lowest stride value first Or we can implement randomization for process that will run 
+   Process running
+2. Increment the **counter** value for the process (called **pass** value) by its stride to track its global process.
+3. The scheduler then uses the **stride** and **pass** values to run next process.
+
+And now at any given time the scheduler runs the process that has the lowest pass value so far.
+
+### Stride Scheduling vs Lottery Scheduling
+
+So from the precision of the Stride Scheduling, why should we use Lottery Scheduling?
+
+Well lottery scheduling has one nice property that stride scheduling does not: **no global state**.
+Imagine new job enters in middle of the stride scheduling; what should its pass value be? Should it be set to 0? If so, it will monopolize the CPU. 
+With Lottery Scheduling there is no global state per process;
+we simply add a new process with whatever ticket it has, update the single global variable to track how many total tickets we have and go from there.
+In this way lottery scheduling makes it much easier to incorporate new processes in a sensible manner. 
+
