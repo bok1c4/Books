@@ -11,15 +11,24 @@
 // 4. For what types of workloads does SJF deliver the same turnaround
 // times as FIFO?
 //
+// Answer: When all of the jobs have the same length
+//
 // 5. For what types of workloads and quantum lengths does SJF deliver
 // the same response times as RR?
+//
+// Answer: When the length of the job is less then or equal to the quantum
+// length
 //
 // 6. What happens to response time with SJF as job lengths increase?
 // Can you use the simulator to demonstrate the trend?
 //
+// Answer: The Response time increases also
+//
 // 7. What happens to response time with RR as quantum lengths in-
 // crease? Can you write an equation that gives the worst-case re-
 // sponse time, given N jobs?
+//
+// Answer: Response time decreases
 
 // response_time = first_run - arrival
 // turnaround_time = completion - arrival
