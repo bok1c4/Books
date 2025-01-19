@@ -24,7 +24,9 @@
 // response_time = first_run - arrival
 // turnaround_time = completion - arrival
 
+#include "types.h"
 #include <bits/types/struct_timeval.h>
+#include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <queue>
@@ -68,26 +70,6 @@ void task1() {
 }
 
 void task2() {
-  struct Node {
-    struct Data {
-      int timeout;
-
-      timeval arrival{};
-      timeval completion{};
-      timeval first_run{};
-
-      int response_time;
-      int turnaround_time;
-
-      Data(int timeout)
-          : timeout(timeout), response_time(0), turnaround_time(0) {}
-    };
-
-    Data data;
-    Node *next;
-
-    Node(const int &timeout) : data(timeout), next(nullptr) {}
-  };
 
   Node *head = nullptr;
   Node *tail = nullptr;
@@ -150,8 +132,79 @@ void task2() {
   return;
 }
 
+void task3() {
+  int time_slice_ms = 1000;
+
+  Node *head = nullptr;
+  Node *tail = nullptr;
+
+  for (int timeout : {100, 200, 300}) {
+    Node *newNode = new Node(timeout);
+
+    if (!head) {
+      head = newNode;
+    } else {
+      tail->next = newNode;
+    }
+    tail = newNode;
+  }
+
+  tail->next = head;
+
+  Node *current = head;
+  timeval current_time;
+  gettimeofday(&current_time, nullptr);
+
+  int elapsed_time = 0;
+  int completed_jobs = 0;
+  int total_jobs = 3;
+
+  while (completed_jobs < total_jobs) {
+    Node *next = current->next;
+
+    // response_time = first_run - arrival
+
+    if (current->data.response_time == -1) {
+      current->data.response_time = elapsed_time;
+      current->data.first_run = current_time;
+    }
+
+    int remaining_time = current->data.timeout;
+    if (remaining_time <= time_slice_ms) {
+      elapsed_time += remaining_time;
+      current->data.timeout = 0;
+
+      completed_jobs++;
+      gettimeofday(&current->data.completion, nullptr);
+      current->data.turnaround_time = elapsed_time;
+    } else {
+      elapsed_time += time_slice_ms;
+      current->data.timeout -= time_slice_ms;
+    }
+
+    current = next;
+  }
+
+  current = head;
+  std::cout << "Round Robin: \n";
+  for (int i = 0; i < total_jobs; i++) {
+    std::cout << "Job " << (i + 1) << ": "
+              << "Response Time = " << current->data.response_time << "ms, "
+              << "Turnaround Time = " << current->data.turnaround_time
+              << "ms\n";
+    current = current->next;
+  }
+
+  for (int i = 0; i < total_jobs; i++) {
+    Node *temp = current->next;
+    delete current;
+    current = temp;
+  }
+}
+
 int main(int argc, char *argv[]) {
   task1();
   task2();
+  task3();
   return 0;
 }
