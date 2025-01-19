@@ -21,6 +21,9 @@
 // crease? Can you write an equation that gives the worst-case re-
 // sponse time, given N jobs?
 
+// response_time = first_run - arrival
+// turnaround_time = completion - arrival
+
 #include <bits/types/struct_timeval.h>
 #include <ctime>
 #include <iostream>
@@ -28,11 +31,9 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <thread>
+#include <unistd.h>
 
 void task1() {
-
-  // response_time = first_run - arrival
-  // turnaround_time = completion - arrival
 
   std::queue<int> q;
 
@@ -49,7 +50,6 @@ void task1() {
 
     gettimeofday(&completion, nullptr);
 
-    // Calculate response time and turnaround time
     long response_time = (first_run.tv_sec - arrival.tv_sec) * 1000 +
                          (first_run.tv_usec - arrival.tv_usec) / 1000;
     long turnaround_time = (completion.tv_sec - arrival.tv_sec) * 1000 +
@@ -67,7 +67,91 @@ void task1() {
   return;
 }
 
+void task2() {
+  struct Node {
+    struct Data {
+      int timeout;
+
+      timeval arrival{};
+      timeval completion{};
+      timeval first_run{};
+
+      int response_time;
+      int turnaround_time;
+
+      Data(int timeout)
+          : timeout(timeout), response_time(0), turnaround_time(0) {}
+    };
+
+    Data data;
+    Node *next;
+
+    Node(const int &timeout) : data(timeout), next(nullptr) {}
+  };
+
+  Node *head = nullptr;
+  Node *tail = nullptr;
+
+  for (int timeout : {100, 200, 300}) {
+    Node *newNode = new Node(timeout);
+
+    if (!head) {
+      head = newNode;
+    } else {
+      tail->next = newNode;
+    }
+    tail = newNode;
+  }
+
+  Node *current = head;
+  timeval current_time;
+
+  while (current) {
+    gettimeofday(&current->data.arrival, nullptr);
+
+    usleep(current->data.timeout * 1000);
+    gettimeofday(&current->data.first_run, nullptr);
+
+    usleep(current->data.timeout * 1000);
+    gettimeofday(&current->data.completion, nullptr);
+
+    current->data.response_time =
+        (current->data.first_run.tv_sec - current->data.arrival.tv_sec) * 1000 +
+        (current->data.first_run.tv_usec - current->data.arrival.tv_usec) /
+            1000;
+
+    current->data.turnaround_time =
+        (current->data.completion.tv_sec - current->data.arrival.tv_sec) *
+            1000 +
+        (current->data.completion.tv_usec - current->data.arrival.tv_usec) /
+            1000;
+
+    std::cout << "-------------------------\n";
+    std::cout << "Job Timeout: " << current->data.timeout << "ms\n";
+    std::cout << "Arrival Time: " << current->data.arrival.tv_sec << "s "
+              << current->data.arrival.tv_usec << "us\n";
+    std::cout << "First Run Time: " << current->data.first_run.tv_sec << "s "
+              << current->data.first_run.tv_usec << "us\n";
+    std::cout << "Completion Time: " << current->data.completion.tv_sec << "s "
+              << current->data.completion.tv_usec << "us\n";
+    std::cout << "Response Time: " << current->data.response_time << "ms\n";
+    std::cout << "Turnaround Time: " << current->data.turnaround_time << "ms\n";
+
+    current = current->next;
+  }
+
+  current = head;
+  while (current) {
+    Node *temp = current;
+    current = current->next;
+    delete temp;
+  }
+
+  return;
+}
+
 int main(int argc, char *argv[]) {
   task1();
+  task2();
   return 0;
 }
