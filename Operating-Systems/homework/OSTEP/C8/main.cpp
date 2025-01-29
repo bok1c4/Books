@@ -27,7 +27,6 @@
 #include <ctime>
 #include <iostream>
 #include <queue>
-#include <vector>
 
 struct Job {
   int id;

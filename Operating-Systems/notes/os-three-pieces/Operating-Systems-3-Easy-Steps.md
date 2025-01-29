@@ -55,9 +55,8 @@
       - [Shortest time to Completion First (STCF - has preemption)](#shortest-time-to-completion-first-stcf-has-preemption)
       - [Round Robin](#round-robin)
         - [Crux: How can we build a scheduler that is sensitive to response time](#crux-how-can-we-build-a-scheduler-that-is-sensitive-to-response-time)
-        - [Example:](#example)
-          - [RR Response Time](#rr-response-time)
-          - [SJF Response Time](#sjf-response-time)
+        - [RR Response Time](#rr-response-time)
+        - [SJF Response Time](#sjf-response-time)
         - [Amortization](#amortization)
           - [Amortization: Example](#amortization-example)
         - [RR Example with turnaround time](#rr-example-with-turnaround-time)
@@ -956,3 +955,22 @@ With Lottery Scheduling there is no global state per process;
 we simply add a new process with whatever ticket it has, update the single global variable to track how many total tickets we have and go from there.
 In this way lottery scheduling makes it much easier to incorporate new processes in a sensible manner. 
 
+# Multiprocessor Scheduling (Advanced)
+
+Multicore processors are in which multiple CPU cores are packed onto a single CPU chip.
+When writing a program adding more CPU's will not run the program faster, but threads and parallel programming will.
+
+**Crux: How should the OS schedule jobs on multiple CPUs? What new problems arise? Do the same old techniques work, or are new ideas required?**
+
+## Background: Multiprocessor Architecture
+
+Difference between single CPU hardware and multi-CPU hardware.
+**The difference centers around the use of hardware caches**, and exactly how data is shared across multiple processors.
+
+Caches are small, fast memories hold copies of popular data that is found in the main memory of the system.
+
+Main memory in contrast holds all the data, but access to this larger memory is slower. By keeping frequently accessed data in cache, the system can make the large slow memory appear to be a fast one.
+
+When the program is initially loaded, data is being loaded from the main-memory into CPU. After the initial fetch, if the program is common (instruction) the data will be placed in CPU cache for faster access.
+
+Caches are based on the notion of **locality**, of which there are two kinds: **temporal locality** and **spatial locality**.
