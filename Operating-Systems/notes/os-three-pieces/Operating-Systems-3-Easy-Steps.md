@@ -973,4 +973,88 @@ Main memory in contrast holds all the data, but access to this larger memory is 
 
 When the program is initially loaded, data is being loaded from the main-memory into CPU. After the initial fetch, if the program is common (instruction) the data will be placed in CPU cache for faster access.
 
+### Cache
+
 Caches are based on the notion of **locality**, of which there are two kinds: **temporal locality** and **spatial locality**.
+
+#### Temporal Locality
+
+When a piece of data is accessed, it is likely to be accessed again in the near future; variables or even instruction themselves being accessed over and over again in loop.
+
+The idea is:
+If a program access a data item at address 'x', it is likely to access data items near 'x' as well.
+
+**Cache coherence** happens when we have multiple CPU's working. For example:
+CPU-1 fetches something form main memory and puts it in its cache. Then the instructions says it needs to update that value (that is fetched) so writing to main memory is slow so it scheduled for later.
+Now all of a sudden before the writing to main memory, program is switched to CPU-2 then when we retrieve the value that CPU-1 retrieved we will get the old avlue instead of new one, and that is **Cache coherence**.
+
+One of the ways to fix this is to use **bus snooping**
+
+**Bus Snooping: ** Each cache pays attention to memory updates by observing the bus that connects them to main memory. **When CPU sees an update for a data item it ho in its cache, it will notice the change and either invalidate its copy  (remove it from its own cache) or update it (put the new value into its cache too)**
+
+**Write-back** caches make this more complicated (because the write to main memory isn't visible until later).
+
+## Don't Forget synchronization
+
+When accessing (and in particular updating) shared data items or structures across CPUs, mutual exclusion primitives (such as locks) should likely be used.
+**Use lock when need to update something concurrently (guarantees correctness).**
+
+If thread-1 executes the first line, it will have the current value of **head** stored in its tmp variable. 
+If thread-2 then executes the first line as well, it also will have the same value of head stored in its own private tmp.  
+(variable tmp is allocated on the stack, and thus each thread will have its own private storage for it).
+Thus instead of each thread removing an element from the head of the list, each thready will try to remove the same head element;
+Leading to all sorts of problems; like:
+
+1. double free of the head element.
+2. potentially returning the same data value twice 
+
+The solution of course is to **use locks** as bolted above. Make routines correct with locks.
+Allocating a simple mutex (e.g, pthread_mutex_tm) and then adding a lock(&m) at the beginning of the routine and unlock(&m) at the end of the routine.
+Unfortunately such approach is not without problems, in particular in regards to performance.
+As the number of CPU's grows, access to a synchronized shared data structure becomes quite slow.
+
+
+## Cache Affinity
+
+When process have already been run already on the CPU. Some of its state is saved in CPU cache.
+For gaining maximum performance and minizing the time of execution of the program, we need to ensure that the process (program) is run on the same CPU.
+If the program is run on some different CPU, there will be state invalidation and the data will need to be fetched again.
+
+## Single Queue Scheduling (SQMS)
+
+**SQMS - Single Queue Multi-Processor Scheduling**
+
+Pros: Simple
+
+Cons: 
+1. **Scalability**
+    To ensure that the scheduler does a good job we need to have locks.
+    Problem with SQMS and locks is that the performance is reduced.
+    As the number of systems grows, the system spends more and more time on in lock overhead and less time doing the work the system should be doing.
+2. **Cache affinity**
+    So we have five jobs  (A, B, C, and D) and four processors.
+    Our scheduling queue looks something like this:
+    A -> B -> C -> D -> E -> NULL. (LL)
+    So we assume that each jobs runs for a time slice and then another job is chosen, here is possible job schedule across CPUs:
+
+    CPU-0: A, E, D, C, B
+    CPU-1: B, A, E, D, C
+    CPU-2: C, B, A, E, D
+    CPU-3: D, C, B, A, E
+
+    So because each CPU simply picks the next job to run from the globally shared queue, each job ends up bouncing around from CPU to CPU, thus doing exactly the opposite of what would make sense from the stand point of cache affinity.
+    
+    To handle this problem SQMS schedulers includes some kind of affinity mechanisms to try to make it more likely that process will continue to run on the same CPU if possible. Specifically one might provide affinity for some jobs, but move others around to balance the load.
+
+    CPU-0: A, E, A, A, A
+    CPU-1: B, B, E, B, B
+    CPU-2: C, C, C, E, C
+    CPU-3: D, D, D, D, E
+
+    With this approach jobs A through D are not moved across processors, with only job E **migrating** from CPU to CPU. Thus preserving the affinity for most.
+    Also we can have randomized migration for the jobs, so we can include fairness in our scheduler.
+
+
+
+
+
