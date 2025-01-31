@@ -1055,6 +1055,56 @@ Cons:
     Also we can have randomized migration for the jobs, so we can include fairness in our scheduler.
 
 
+## Multi-Queue Scheduling
 
+Multiple Queues, one per CPU. Multi-queue multiprocessor scheduling (MQMS)
 
+Each queue follows particular scheduling algorithm, such as RR, or any other. 
+When job enters the system, it is placed on exactly one scheduling queue.
+Then it is scheduling essentially independently, thus avoiding the problems of information sharing and synchronization found in single-queue approach. 
 
+This is an example of how are the jobs scheduled in the job schedulers.
+
+Queue-0 [Node(A), Node(C)]
+Queue-1 [Node(B), Node(D)]
+
+Depending on the queue scheduling policy each CPU now has two jobs to choose from when deciding what should run.
+With **RR** the system might produce a schedule that looks like this:
+
+CPU-0 [A, A, C, C, A, A, C, C, A, A, C, C]
+CPU-1 [B, B, D, D, B, B, D, D, B, B, D, D]
+
+**MQMS has advantage of SQMS in that it should be inherently more scalable.
+As the number of CPU's grows, so too does the number of queues.
+And thus lock and cache contention should not become a central problem.**
+
+**MQMS additionally provides cache affinity.**
+
+The one problem that MQMS might have is the **load imbalance**.
+We go back to this:
+
+CPU-0 [A, A, C, C, A, A, C, C, A, A, C, C]
+CPU-1 [B, B, D, D, B, B, D, D, B, B, D, D]
+
+If C finishes first we would have something like this:
+
+CPU-0 [A, A, A, A, A, A]
+CPU-1 [B, B, D, D, B, B, D, D, B, B, D, D]
+
+As we can see A gets twice as much CPU then the process B and D which is not the desired outcome.
+
+Even worse is if the A and C finishes there will be only B and D left. But because the A and C was on the CPU-0, it will be left idle, because the remaining jobs are in the CPU-1.
+So we need to fix **load imbalance**.
+
+An obvious thing to do is **migration**, move the jobs around the processors.
+So for **migrations**, best thing to have is **work stealing**. One CPU should peek at another one, and see if there are notably more jobs then the other one, it takes some jobs and schedules them (steals them).
+> [!TIP] Peeking is expensive and it might cove to extensive overload if the peeking is too much present.
+
+## Linux Multiprocessor Schedulers
+
+O(1) scheduler the Completely Fair Scheduler (CFS), and the BF Scheduler (BFS).
+Both O(1) scheduler and CFS have multiple queues, whereas BFS has only one queue, showing that both approaches can be successful.
+For example:
+**The O(1) scheduler is a priority based scheduler (similar to MLFQ)**
+**The CFS scheduler is more like lottery scheduler (Stride scheduling)**
+**BFS the only single queue approach among the three is also proportional share, but based on a more complicated scheme**
